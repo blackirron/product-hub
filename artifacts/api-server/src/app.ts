@@ -31,4 +31,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
+app.use((err: any, _req: any, res: any, _next: any) => {
+  console.error("UNHANDLED ERROR:", err?.message, err?.stack);
+  res.status(500).json({ error: err?.message ?? "Internal Server Error" });
+});
+
+export default app;
 export default app;
