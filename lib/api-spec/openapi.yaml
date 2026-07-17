@@ -1,0 +1,762 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: PM Network API - GitHub for Product Managers
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: users
+    description: User profiles and network
+  - name: decks
+    description: PM decks and presentations
+  - name: courses
+    description: PM learning courses
+  - name: events
+    description: Case competitions and PM events
+  - name: stats
+    description: Platform statistics
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ─── Users ───────────────────────────────────────────────
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user profile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}/decks:
+    get:
+      operationId: getUserDecks
+      tags: [users]
+      summary: Get decks by user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: User decks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deck"
+
+  /users/{id}/starred:
+    get:
+      operationId: getUserStarred
+      tags: [users]
+      summary: Get decks starred by user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Starred decks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deck"
+
+  /users/{id}/follow:
+    post:
+      operationId: followUser
+      tags: [users]
+      summary: Follow a user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FollowInput"
+      responses:
+        "200":
+          description: Follow toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowResult"
+
+  # ─── Decks ────────────────────────────────────────────────
+  /decks:
+    get:
+      operationId: listDecks
+      tags: [decks]
+      summary: List all decks
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: tag
+          schema: { type: string }
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [stars, views, newest]
+            default: newest
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: List of decks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deck"
+    post:
+      operationId: createDeck
+      tags: [decks]
+      summary: Upload a new deck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeckInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deck"
+
+  /decks/trending:
+    get:
+      operationId: getTrendingDecks
+      tags: [decks]
+      summary: Get trending decks (most starred recently)
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+      responses:
+        "200":
+          description: Trending decks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deck"
+
+  /decks/{id}:
+    get:
+      operationId: getDeck
+      tags: [decks]
+      summary: Get deck by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Deck
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deck"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateDeck
+      tags: [decks]
+      summary: Update a deck
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeckUpdate"
+      responses:
+        "200":
+          description: Updated deck
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deck"
+    delete:
+      operationId: deleteDeck
+      tags: [decks]
+      summary: Delete a deck
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /decks/{id}/star:
+    post:
+      operationId: starDeck
+      tags: [decks]
+      summary: Toggle star on a deck
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StarInput"
+      responses:
+        "200":
+          description: Star toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StarResult"
+
+  # ─── Courses ──────────────────────────────────────────────
+  /courses:
+    get:
+      operationId: listCourses
+      tags: [courses]
+      summary: List PM courses
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: level
+          schema:
+            type: string
+            enum: [beginner, intermediate, advanced]
+        - in: query
+          name: tag
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Course"
+    post:
+      operationId: createCourse
+      tags: [courses]
+      summary: Add a course
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+
+  /courses/{id}:
+    get:
+      operationId: getCourse
+      tags: [courses]
+      summary: Get course by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+        "404":
+          description: Not found
+
+  # ─── Events ───────────────────────────────────────────────
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List events and case competitions
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [case_comp, pm_event, workshop, conference]
+        - in: query
+          name: upcoming
+          schema: { type: boolean }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 30 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Create an event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/upcoming:
+    get:
+      operationId: getUpcomingEvents
+      tags: [events]
+      summary: Get next upcoming events sorted by date
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+      responses:
+        "200":
+          description: Upcoming events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+
+  /events/{id}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Get event by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update an event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventUpdate"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      summary: Delete an event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Stats ────────────────────────────────────────────────
+  /stats:
+    get:
+      operationId: getPlatformStats
+      tags: [stats]
+      summary: Get platform-wide statistics
+      responses:
+        "200":
+          description: Platform stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformStats"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    # ─── User ──────────────────────────────────────────────
+    User:
+      type: object
+      required: [id, username, name, createdAt]
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        name: { type: string }
+        bio: { type: ["string", "null"] }
+        title: { type: ["string", "null"] }
+        company: { type: ["string", "null"] }
+        avatarUrl: { type: ["string", "null"] }
+        followers: { type: integer }
+        following: { type: integer }
+        deckCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    UserInput:
+      type: object
+      required: [username, name]
+      properties:
+        username: { type: string, minLength: 2 }
+        name: { type: string, minLength: 1 }
+        bio: { type: string }
+        title: { type: string }
+        company: { type: string }
+        avatarUrl: { type: string }
+
+    UserUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        bio: { type: string }
+        title: { type: string }
+        company: { type: string }
+        avatarUrl: { type: string }
+
+    FollowInput:
+      type: object
+      required: [followerId]
+      properties:
+        followerId: { type: integer }
+
+    FollowResult:
+      type: object
+      required: [following]
+      properties:
+        following: { type: boolean }
+        followerCount: { type: integer }
+
+    # ─── Deck ──────────────────────────────────────────────
+    Deck:
+      type: object
+      required: [id, userId, title, stars, views, createdAt]
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        authorName: { type: string }
+        authorUsername: { type: string }
+        authorAvatarUrl: { type: ["string", "null"] }
+        title: { type: string }
+        description: { type: ["string", "null"] }
+        thumbnailUrl: { type: ["string", "null"] }
+        fileUrl: { type: ["string", "null"] }
+        tags: { type: array, items: { type: string } }
+        stars: { type: integer }
+        views: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    DeckInput:
+      type: object
+      required: [userId, title]
+      properties:
+        userId: { type: integer }
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        thumbnailUrl: { type: string }
+        fileUrl: { type: string }
+        tags: { type: array, items: { type: string } }
+
+    DeckUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        thumbnailUrl: { type: string }
+        fileUrl: { type: string }
+        tags: { type: array, items: { type: string } }
+
+    StarInput:
+      type: object
+      required: [userId]
+      properties:
+        userId: { type: integer }
+
+    StarResult:
+      type: object
+      required: [starred, starCount]
+      properties:
+        starred: { type: boolean }
+        starCount: { type: integer }
+
+    # ─── Course ────────────────────────────────────────────
+    Course:
+      type: object
+      required: [id, title, provider, level, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: ["string", "null"] }
+        instructor: { type: ["string", "null"] }
+        provider: { type: string }
+        url: { type: ["string", "null"] }
+        thumbnailUrl: { type: ["string", "null"] }
+        duration: { type: ["string", "null"] }
+        level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        tags: { type: array, items: { type: string } }
+        isFree: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    CourseInput:
+      type: object
+      required: [title, provider, level]
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        instructor: { type: string }
+        provider: { type: string, minLength: 1 }
+        url: { type: string }
+        thumbnailUrl: { type: string }
+        duration: { type: string }
+        level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        tags: { type: array, items: { type: string } }
+        isFree: { type: boolean }
+
+    # ─── Event ─────────────────────────────────────────────
+    Event:
+      type: object
+      required: [id, title, type, eventDate, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: ["string", "null"] }
+        type:
+          type: string
+          enum: [case_comp, pm_event, workshop, conference]
+        host: { type: ["string", "null"] }
+        eventDate: { type: string, format: date }
+        endDate: { type: ["string", "null"] }
+        location: { type: ["string", "null"] }
+        url: { type: ["string", "null"] }
+        registrationDeadline: { type: ["string", "null"] }
+        prize: { type: ["string", "null"] }
+        tags: { type: array, items: { type: string } }
+        createdAt: { type: string, format: date-time }
+
+    EventInput:
+      type: object
+      required: [title, type, eventDate]
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        type:
+          type: string
+          enum: [case_comp, pm_event, workshop, conference]
+        host: { type: string }
+        eventDate: { type: string, format: date }
+        endDate: { type: string }
+        location: { type: string }
+        url: { type: string }
+        registrationDeadline: { type: string }
+        prize: { type: string }
+        tags: { type: array, items: { type: string } }
+
+    EventUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        type:
+          type: string
+          enum: [case_comp, pm_event, workshop, conference]
+        host: { type: string }
+        eventDate: { type: string, format: date }
+        endDate: { type: string }
+        location: { type: string }
+        url: { type: string }
+        registrationDeadline: { type: string }
+        prize: { type: string }
+        tags: { type: array, items: { type: string } }
+
+    # ─── Stats ─────────────────────────────────────────────
+    PlatformStats:
+      type: object
+      required: [userCount, deckCount, starCount, courseCount, eventCount]
+      properties:
+        userCount: { type: integer }
+        deckCount: { type: integer }
+        starCount: { type: integer }
+        courseCount: { type: integer }
+        eventCount: { type: integer }
+        upcomingEventCount: { type: integer }
